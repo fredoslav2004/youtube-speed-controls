@@ -15,9 +15,7 @@
     "browser_style": true,
     "chrome_style": true
   },
-  "permissions": [
-    "storage"
-  ],
+  "permissions": ["storage"],
   "icons": {
     "64": "icons/icon_64.png",
     "1024": "icons/icon.png"
