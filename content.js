@@ -171,25 +171,114 @@ class Instance {
     container.style =
       "margin:0 14px; display:flex; align-items: center; gap:12px;";
 
-    let displayHTML = `<div class="rdisplay" style="grid-row: 1; grid-column: 1; font-size:22px; user-select: none;">⏱ <span class="pbspeed-value"></span></div>`;
-    let sliderHTML = `<input id="slider" class="pbspeed-slider" type="range" min="0" max="2" step="0.05" style="grid-row: 1; grid-column: 3; width:7em; height:0.72em; -webkit-appearance:none; outline:none; opacity:0.70; background:#111111; box-shadow: inset 0 0 5px rgba(0, 0, 0, 1); border-radius: 4px;"/>`;
-    // Control layout:
-    // | Display | 0.25 0.50 0.75 1.00
-    // | Current | 1.25 1.50 1.75 2.00
-    let presetsHTML = `<div class="setrs" style="grid-row: 1; grid-column: 3; display: none; grid-template: 1fr 1fr / repeat(4, auto); column-gap: 6px;"><div>0.25</div><div>0.50</div><div>0.75</div><div>1.00</div><div>1.25</div><div>1.50</div><div>1.75</div><div>2.00</div></div>`;
-    container.innerHTML = `${displayHTML}${sliderHTML}${presetsHTML}`;
+    let displayHTML = `
+      <div class="rdisplay" 
+        style="
+          grid-row: 1; 
+          grid-column: 1; 
+          font-size:14px; 
+          user-select: none;
+        ">
+        ⏱ <span class="pbspeed-value"></span></div>`;
+    let initialValue = 1;
+    let maxValue = 3;
+    let sliderHTML = `
+      <style>
+      .pbspeed-slider {
+        -webkit-appearance: none;
+        width: 7em;
+        height: 4px;
+        outline: none;
+        border-radius: 2px;
+        margin: 0;
+        padding: 0;
+        /* initial background: white up to 50%, gray afterwards */
+        background: linear-gradient(
+        to right,
+        #fff 0%,
+        #fff ${initialValue / maxValue * 100}%,
+        #888 ${initialValue / maxValue * 100}%,
+        #888 100%
+        );
+      }
+      .pbspeed-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #fff;
+        cursor: pointer;
+        margin-top: -4px; /* center the thumb vertically */
+        border: none;
+      }
+      .pbspeed-slider::-moz-range-thumb {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #fff;
+        cursor: pointer;
+        border: none;
+      }
+      .pbspeed-slider::-moz-range-track {
+        height: 4px;
+        background: transparent;
+      }
+      </style>
+      <input
+      id="slider"
+      class="pbspeed-slider"
+      type="range"
+      min="0"
+      max="3"
+      step="0.05"
+      oninput="
+        const pct = (this.value - this.min) / (this.max - this.min) * 100;
+        this.style.background = 
+        'linear-gradient(to right, #fff 0%, #fff ' + pct + '%, #888 ' + pct + '%, #888 100%)';
+      "
+      />`;
+    const presetValues = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5];
+    // first set the displayHTML and sliderHTML into the container
+    container.innerHTML = displayHTML + sliderHTML;
+    // then build the presets container as an inline-flex row
+    const presetsContainer = document.createElement("div");
+    presetsContainer.className = "setrs";
+    presetsContainer.style.cssText = `
+      display: inline-flex;
+      flex-direction: row;
+      gap: 2px;
+      align-items: center;
+    `;
+    // create each preset button
+    for (let v of presetValues) {
+      const btn = document.createElement("div");
+      btn.textContent = v.toLocaleString(undefined, {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1,
+      });
+      btn.style.cssText = `
+          font-size:14px; 
+          cursor:pointer;
+          line-height: 1.2em;
+          background-color: rgba(0, 0, 0, 0.3);
+          border-radius: 4px;
+          padding: 0.12em 0.34em;
+          margin-right: 0.2em;
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          min-width: 1.5em;
+        `;
+      presetsContainer.appendChild(btn);
+    }
 
+    // append the presets row to the main container
+    container.appendChild(presetsContainer);
+
+    // assign to instance fields
     this._container = container;
     this._display = container.querySelector(".rdisplay");
     this._rateDisplay = this._display.querySelector(".pbspeed-value");
     this._slider = container.querySelector(".pbspeed-slider");
     this._presets = container.querySelector(".setrs");
-
-    // Styling children en-mass
-    // container height 48px => element height 48 / 2 = 24 px
-    for (let x of this._presets.childNodes)
-      x.style =
-        "font-size: 14px; line-height: 24px; display: flex; align-items: center; cursor: pointer;";
   }
   _bind() {
     this._video.addEventListener(
@@ -232,7 +321,7 @@ class Instance {
       "show-slider": true,
       "show-presets": false,
     });
-    this._presets.style.display = values["show-presets"] ? "grid" : "none";
+    this._presets.style.display = values["show-presets"] ? "inline-flex" : "none";
     this._slider.style.display = values["show-slider"] ? "block" : "none";
   }
   _insert() {
